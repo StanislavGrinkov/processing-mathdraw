@@ -5,8 +5,7 @@ class TrochoidParametricCurve extends DynamicSystem {
   int colorFuncIndex = 0;
   
   BaseColor[] colorFunctions = {
-    new TwoColorGradient(),
-    new SolidColor()    
+    new Gradient()    
   };
   
   final class PathPoint {
@@ -125,10 +124,7 @@ class TrochoidParametricCurve extends DynamicSystem {
     RGroup group = new RGroup();
     float h_ = h;
     float zoom_ = zoom;
-    
-    float colorStep = 0;
-    float colorIncr = 1.0f / iterations;
-    
+    float colorStep = 1.0f / iterations;
     for (int i = 0; i < iterations; ++i) {
       calculatePath(h_, zoom_);
       
@@ -145,7 +141,7 @@ class TrochoidParametricCurve extends DynamicSystem {
         h_ = currentStepFunc.next(h_);
         
       RShape shape = path.toShape();
-      shape.setStroke(currentColor.getColor(colorStep)); colorStep +=colorIncr;
+      shape.setStroke(currentColor.getColor(colorStep * i));
       shape.setFill(false);
       shape.translate(center_x*i, center_y*i);
       shape.rotate(radians(iterationAngle * i), shape.getCenter());
@@ -165,11 +161,10 @@ class TrochoidParametricCurve extends DynamicSystem {
     pg.strokeWeight(1);
     float h_ = h;
     float zoom_ = zoom;
-    float colorStep = 0;
-    float colorIncr = 1.0f / iterations;
+    float colorStep = 1.0f / iterations;
     for (int i = 0; i < iterations; ++i) {
       calculatePath(h_, zoom_);
-      color vertexColor = isSelected ? #0000FF : currentColor.getColor(colorStep); //float lerpStep = 1.0 / pathPoints.size(); //colorizer.getColor(t*lerpStep);
+      color vertexColor = isSelected ? #0000FF : currentColor.getColor(colorStep * i); //float lerpStep = 1.0 / pathPoints.size(); //colorizer.getColor(t*lerpStep);
       
       pg.beginShape();
       pg.stroke(vertexColor);
@@ -179,7 +174,6 @@ class TrochoidParametricCurve extends DynamicSystem {
       }
       pg.endShape();
       
-      colorStep +=colorIncr;
       if (applyStepFuncToZoom)
         zoom_ = currentStepFunc.next(zoom_);        
       if (applyStepFuncToH)

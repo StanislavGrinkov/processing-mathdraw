@@ -6,7 +6,6 @@ class ParametricSystemController extends DynamicSystem {
   DynamicSystem current = null;
   int index = 0;
   
-  boolean emulateBallpen = false;
   
   SystemState state = SystemState.DEFAULT;
   
@@ -21,23 +20,6 @@ class ParametricSystemController extends DynamicSystem {
     return null;
   }
   
-  void drawHelperLines() {
-    stroke(127);
-    noFill();
-    //rect(100, 1, 800, 999); // 8x10
-    rect(1, 100, 999, 800); // 10x8
-    
-    stroke(192);
-    line(0, 500, 1000, 500);
-    line(500, 0, 500, 1000);
-    
-    textSize(14);
-    fill(0);
-    text("10x8", 960, 895);
-    //text("8x10", 860, 995);
-    noFill();
-  }
-  
   int drawDynamicSystemsCount(int y) {
     textSize(14);
     String c = "[ ";
@@ -47,23 +29,22 @@ class ParametricSystemController extends DynamicSystem {
       s += i == index ? "V" : "_";
     }
     c += " ]";
-    fill(0);
+    fill(!isNegative ? 0 : 255);
     text(c, 10, y);
     fill(#ff0000);
     text(s, 10, y); y += Constants.lineDrawStep;
-    fill(0);
+    fill(!isNegative ? 0 : 255);
     return y;
   }
 
+  @Override
   public DynamicSystem clone() {
     return null;
   }
   
   @Override
   public void drawMe(PGraphics pg) {
-    pg.background(255);
-  
-    drawHelperLines();
+    pg.background(isNegative ? 0 : 255);
     pg.pushMatrix();
     for (DynamicSystem curve: dynamicSystems) {
       curve.drawMe(pg);
@@ -80,11 +61,14 @@ class ParametricSystemController extends DynamicSystem {
   @Override
   public void processDefaultKeys() {
     switch (key) {
+      case 'w':
+        isNegative = !isNegative;
+        return;
       case 's':
         PGraphics pg = createGraphics(1000, 1000, P3D, null);
         pg.beginDraw();
         pg.smooth(8);
-        pg.background(255);
+        pg.background(isNegative ? 0 : 255);
         for (DynamicSystem curve: dynamicSystems) {
           curve.drawMe(pg);
         }
@@ -94,14 +78,11 @@ class ParametricSystemController extends DynamicSystem {
         RSVG svg = new RSVG();
         RGroup group = new RGroup();
         for (DynamicSystem curve: dynamicSystems) {
-          group.addElement(curve.getSvg(emulateBallpen));
+          group.addElement(curve.getSvg(false));
         }
         svg.saveGroup("output/"+getFileName("vector", "svg"), group);
         //todo add saving params to txt file
         // curve.getParamsAsText();
-        break;
-      case 'b':
-        emulateBallpen = !emulateBallpen;
         break;
       case 'e':
         state = SystemState.EDIT_PARAMS;
@@ -117,21 +98,29 @@ class ParametricSystemController extends DynamicSystem {
   
   @Override
   public void processEditColorKeys() {
+    switch(key)
+    {
+      case 'w':
+        isNegative = !isNegative;
+        return;
+    }
     current.processEditColorKeys();
   }
   
   @Override
   public void processEditParamKeys() {
     switch (key) {
+      case 'w':
+        isNegative = !isNegative;
+        return;
       case 'p':
         current.setSelected(!current.getSelected());
         return;
       case 'c':
         current.setSelected(false);
-        current = current.clone();
+        current = current.clone(); //<>//
         dynamicSystems.add(current);
         index = dynamicSystems.size() - 1;
-        //current.setSelected(true);
         return;
     }
     current.setSelected(false);
@@ -166,7 +155,6 @@ class ParametricSystemController extends DynamicSystem {
         current.setSelected(false);
         return;
     }
-    //current.setSelected(true);
     
     current.processEditParamKeys();
   }
@@ -174,12 +162,10 @@ class ParametricSystemController extends DynamicSystem {
   @Override
   public int drawHelpDefault(int y) {
     textSize(14);
-    fill(0);
+    text("Press > w < to change background to black/white", 10, y); y += Constants.lineDrawStep;
     text("Press > e < to enter param edit mode", 10, y); y += Constants.lineDrawStep;
     text("~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
     text("Press > s < to  save SVG, render preview on 1000x1000 canvas and save parameters to txt file", 10, y); y += Constants.lineDrawStep;
-    
-    text("Press > b < to " + (emulateBallpen ? "Disable" : "Enable") + " ballpen emulation while render to svg (warn this will double all curves)", 10, y); y += Constants.lineDrawStep;
     return y;
   }
   
@@ -187,13 +173,17 @@ class ParametricSystemController extends DynamicSystem {
   public int drawHelpEditParams(int y) {
     y = drawDynamicSystemsCount(y);
     y = current.drawHelpEditParams(y);
+    text("~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
     text("Press > c < to clone current DynamicSystem", 10, y); y += Constants.lineDrawStep;
+    text("Press > w < to change background to black/white", 10, y); y += Constants.lineDrawStep;
     return y;
   }
   
   @Override
   public int drawHelpEditColor(int y) {
     y = current.drawHelpEditColor(y);
+    text("~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
+    text("Press > w < to change background to black/white", 10, y); y += Constants.lineDrawStep;
     return y;
   }
 }

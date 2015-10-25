@@ -8,6 +8,7 @@ abstract class DynamicSystem {
   protected boolean isSelected;
   protected String name;
   protected BaseColor currentColor;
+  protected boolean isNegative = false;
   
   public abstract void drawMe(PGraphics pg);
   
@@ -25,7 +26,7 @@ abstract class DynamicSystem {
   
   public void drawHelp(SystemState state) {
     textSize(14);
-    fill(0); // depends on bg color
+    fill(!isNegative ? 0 : 255); // depends on bg color
     int y = 20;
     if (state == SystemState.DEFAULT) {
       drawHelpDefault(y);
