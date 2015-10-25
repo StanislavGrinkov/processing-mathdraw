@@ -7,7 +7,7 @@ enum SystemState {
 abstract class DynamicSystem {
   protected boolean isSelected;
   protected String name;
-  BaseColor colorizer = new SolidColor();
+  protected BaseColor currentColor;
   
   public abstract void drawMe(PGraphics pg);
   

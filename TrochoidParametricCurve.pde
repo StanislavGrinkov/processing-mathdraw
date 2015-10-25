@@ -1,6 +1,14 @@
 import geomerative.*;
 
-class ParametricCurve extends DynamicSystem {
+class TrochoidParametricCurve extends DynamicSystem {
+  
+  int colorFuncIndex = 0;
+  
+  BaseColor[] colorFunctions = {
+    new TwoColorGradient(),
+    new SolidColor()    
+  };
+  
   final class PathPoint {
     public float x;
     public float y;
@@ -15,8 +23,8 @@ class ParametricCurve extends DynamicSystem {
   
   ArrayList<PathPoint> pathPoints = new ArrayList<PathPoint>();
   StepFuncBase[] stepFunctions = {
-    new StepFuncEqualStep(0.1, -5, 5, 0.01),
-    new StepFuncDivisor(1.1, 1.01, 2.1, 0.01),
+    new StepFuncEqualStep(0.1f, -5f, 5f, 0.01f, 0.001f),
+    new StepFuncDivisor(1.1f, 1.01f, 2.1f, 0.01f, 0.001f),
     //new StepFuncSinStep(0, -180, 180, 2),
   };
   int stepFuncIndex = 0;
@@ -30,7 +38,7 @@ class ParametricCurve extends DynamicSystem {
   float zoom = 50;
   int rev = 9;
   float rotationAngle = 0;
-  int iterations = 10; 
+  int iterations = 45; 
   float iterationAngle = 0;
   float center_x = 0;
   float center_y = 0;
@@ -38,14 +46,15 @@ class ParametricCurve extends DynamicSystem {
   boolean applyStepFuncToH = true;
   boolean applyStepFuncToZoom = false;
   
-  public ParametricCurve(ParametricSystemController controller) {
+  public TrochoidParametricCurve(ParametricSystemController controller) {
     name = "PC-" + Math.round(Math.random()*5000);
     this.controller = controller;
+    currentColor = colorFunctions[colorFuncIndex];
   }
   
   @Override
   public DynamicSystem clone() {
-    ParametricCurve pc = new ParametricCurve(this.controller);
+    TrochoidParametricCurve pc = new TrochoidParametricCurve(this.controller);
     pc.a = this.a;
     pc.b = this.b;
     pc.h = this.h;
@@ -63,8 +72,21 @@ class ParametricCurve extends DynamicSystem {
       pc.stepFunctions[i] = this.stepFunctions[i].clone();
     }
     pc.stepFuncIndex = this.stepFuncIndex;
-    pc.currentStepFunc = pc.stepFunctions[pc.stepFuncIndex];
+    pc.currentStepFunc = pc.stepFunctions[this.stepFuncIndex];
+    
+    for (int i = 0; i < colorFunctions.length; ++i) {
+      pc.colorFunctions[i] = this.colorFunctions[i].clone();
+    }
+    pc.currentColor = pc.colorFunctions[this.colorFuncIndex];
     return pc;
+  }
+  
+  public void calculatePath(float h_, float factor_)
+  {
+    if (isEpitrochoid)
+        calculateEpitrochoidPath(h_, factor_);
+      else
+        calculateHypotrochoidPath(h_, factor_);
   }
   
   private void calculateHypotrochoidPath(float h, float factor) {
@@ -103,11 +125,12 @@ class ParametricCurve extends DynamicSystem {
     RGroup group = new RGroup();
     float h_ = h;
     float zoom_ = zoom;
+    
+    float colorStep = 0;
+    float colorIncr = 1.0f / iterations;
+    
     for (int i = 0; i < iterations; ++i) {
-      if (isEpitrochoid)
-        calculateEpitrochoidPath(h_, zoom_);
-      else
-        calculateHypotrochoidPath(h_, zoom_);
+      calculatePath(h_, zoom_);
       
       PathPoint p = pathPoints.get(0);
       RPath path = new RPath(p.x, p.y);
@@ -122,30 +145,11 @@ class ParametricCurve extends DynamicSystem {
         h_ = currentStepFunc.next(h_);
         
       RShape shape = path.toShape();
-      shape.setStroke(colorizer.getColor(1));
+      shape.setStroke(currentColor.getColor(colorStep)); colorStep +=colorIncr;
       shape.setFill(false);
       shape.translate(center_x*i, center_y*i);
       shape.rotate(radians(iterationAngle * i), shape.getCenter());
       group.addElement(shape);
-      if (emulateBallpen) {
-        // get hsv.
-        colorMode(RGB, 255);
-        color c = colorizer.getColor(1);
-        float hue = hue(c);
-        float sat = saturation(c);
-        float br = brightness(c); br = 220;
-        
-        colorMode(HSB, 255);
-        color cLight = color(hue, sat, br);
-        
-        shape = path.toShape();
-        shape.setStroke(cLight);
-        shape.setStrokeWeight(0.5f);
-        shape.setFill(false);
-        shape.translate(center_x*i, center_y*i);
-        shape.rotate(radians(iterationAngle * i), shape.getCenter());
-        group.addElement(shape);
-      }
     }
     group.rotate(radians(rotationAngle), group.getCenter());
     return group;
@@ -161,23 +165,21 @@ class ParametricCurve extends DynamicSystem {
     pg.strokeWeight(1);
     float h_ = h;
     float zoom_ = zoom;
-
-    color vertexColor = isSelected ? #0000FF : colorizer.getColor(0); //float lerpStep = 1.0 / pathPoints.size(); //colorizer.getColor(t*lerpStep);
-    
+    float colorStep = 0;
+    float colorIncr = 1.0f / iterations;
     for (int i = 0; i < iterations; ++i) {
-      if (isEpitrochoid)
-        calculateEpitrochoidPath(h_, zoom_);
-      else
-        calculateHypotrochoidPath(h_, zoom_);
+      calculatePath(h_, zoom_);
+      color vertexColor = isSelected ? #0000FF : currentColor.getColor(colorStep); //float lerpStep = 1.0 / pathPoints.size(); //colorizer.getColor(t*lerpStep);
+      
       pg.beginShape();
+      pg.stroke(vertexColor);
       for (int t = 0; t < pathPoints.size(); ++t) {
         PathPoint p = pathPoints.get(t);
-        
-        pg.stroke(vertexColor);
         pg.vertex(p.x, p.y);
       }
-      pg.endShape();    
+      pg.endShape();
       
+      colorStep +=colorIncr;
       if (applyStepFuncToZoom)
         zoom_ = currentStepFunc.next(zoom_);        
       if (applyStepFuncToH)
@@ -194,22 +196,36 @@ class ParametricCurve extends DynamicSystem {
   
   @Override
   public void processEditColorKeys() {
-    colorizer.processKeys();
+    currentColor.processKeys();
+    switch (key) {
+      case ',':
+        --colorFuncIndex;
+        if (colorFuncIndex < 0)
+          colorFuncIndex = colorFunctions.length - 1;
+        currentColor = colorFunctions[colorFuncIndex];
+        break;
+      case '.':
+        ++colorFuncIndex;
+        if (colorFuncIndex > colorFunctions.length - 1)
+          colorFuncIndex = 0;
+        currentColor = colorFunctions[colorFuncIndex];
+        break;
+    }
     switch (keyCode) {
       case KeyEvent.VK_BACK_SPACE:
         controller.setState(SystemState.EDIT_PARAMS);
-        this.isSelected = true;
+        //isSelected = true;
         break;
     }
   }
   
   @Override
   public void processEditParamKeys() {
-    float r_step = 0.5;
-    float h_step = 0.5;
-    float zoom_step = 1;
-    float d_moveStep = 0.5;
-    float stepAngle = 0.5;
+    float r_step = 0.5f;
+    float h_step = 0.5f;
+    float zoom_step = 1f;
+    float d_moveStep = 0.5f;
+    float stepAngle = 0.1f;
     currentStepFunc.processKeys();
     
     if (key == CODED) {
@@ -229,18 +245,29 @@ class ParametricCurve extends DynamicSystem {
       }
       return;
     }
+    
+    //processSetDefaultParamKeys();
+    
     switch (key) {
       case 'a':
         a += r_step;
+        if (a == 0.0f || b == a)
+          a += r_step;
         break;
       case 'A':
         a -= r_step;
+        if (a == 0.0f || b == a)
+          a -= r_step;
         break;
       case 'b':
         b += r_step;
+        if (b == 0.0f || b == a)
+          b += r_step;
         break;
       case 'B':
         b -= r_step;
+        if (b == 0.0f || b == a)
+          b -= r_step;
         break;
       case 'h':
         h += h_step;
@@ -269,9 +296,17 @@ class ParametricCurve extends DynamicSystem {
         break;
       case 'j':
         iterationAngle += stepAngle;
+        if (iterationAngle > -0.0001 && iterationAngle < 0.0001)
+        {
+          iterationAngle = 0.0f;
+        }
         break;
       case 'J':
         iterationAngle -= stepAngle;
+        if (iterationAngle > -0.0001 && iterationAngle < 0.0001)
+        {
+          iterationAngle = 0.0f;
+        }
         break;
       case 'i':
         ++iterations;
@@ -305,7 +340,6 @@ class ParametricCurve extends DynamicSystem {
       case 't':
         isEpitrochoid = !isEpitrochoid;
         break;
-        
     }
   }
   
@@ -328,10 +362,11 @@ class ParametricCurve extends DynamicSystem {
     text("iteartions = " + iterations + "  (+i,-I)", 10, y); y += Constants.lineDrawStep;
     text("iteartionAngle = " + iterationAngle + "  (+j,-J)", 10, y); y += Constants.lineDrawStep;
     text("center_point = " + center_x + ", " + center_y + "  (arrows)", 10, y); y += Constants.lineDrawStep;
+    text("", 10, y); y += Constants.lineDrawStep;
     text("Apply StepFunc To H = " + applyStepFuncToH + "  (n to toggle)", 10, y); y += Constants.lineDrawStep;
     text("Apply StepFunc To Z = " + applyStepFuncToZoom + "  (m to toggle)", 10, y); y += Constants.lineDrawStep;
     y = currentStepFunc.drawHelp(y);
-    text("use < and > to change step functions systems.", 10, y); y += Constants.lineDrawStep;
+    text("use < and > to change step function.", 10, y); y += Constants.lineDrawStep;
     text("~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
     text("Press > e < to enter color edit mode", 10, y); y += Constants.lineDrawStep;
     text("Press > backspace < to exit from Edit Parameters mode", 10, y); y += Constants.lineDrawStep;
@@ -340,7 +375,10 @@ class ParametricCurve extends DynamicSystem {
   
   @Override
   public int drawHelpEditColor(int y) {
-    y = colorizer.drawHelp(y);
+    y = currentColor.drawHelp(y);
+    text("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
+    text("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
+    text("use < and > to change color function.", 10, y); y += Constants.lineDrawStep;
     text("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
     text("Press > backspace < to exit from Edit Color mode", 10, y); y += Constants.lineDrawStep;
     return y;

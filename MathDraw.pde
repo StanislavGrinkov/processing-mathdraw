@@ -1,5 +1,7 @@
 import processing.opengl.*;
-import java.awt.event.KeyEvent;
+//import java.awt.event.KeyEvent;
+import com.jogamp.newt.event.KeyEvent;
+
 import geomerative.*;
 
 ParametricSystemController controller = new ParametricSystemController();

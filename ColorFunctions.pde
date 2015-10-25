@@ -1,3 +1,72 @@
+abstract class BaseColor {
+  public abstract color getColor(float t);
+  public abstract void processKeys();
+  public abstract int drawHelp(int y);
+  public abstract BaseColor clone();
+}
+
+
+/**
+*** Two color gradient color function
+**/
+class TwoColorGradient extends BaseColor
+{
+	public final class ColorPair {
+	  private color start;
+	  private color end;
+	  public ColorPair(color start, color end) {
+		this.start = start;
+		this.end = end;
+	  }
+	  public void setStart(int r, int g, int b) {
+		start = color(r, g, b);
+	  }
+	  public void setEnd(int r, int g, int b) {
+		end = color(r, g, b);
+	  }
+	  public color getStart() {
+		return start;
+	  }
+	  public color getEnd() {
+		return end;
+	  }
+	  
+	  public color getAt(float t) {
+		return lerpColor(start, end, t);
+	  }
+	}
+
+  ColorPair[] presets = {
+    new ColorPair(#00DD00, #DD0000)
+  };
+  ColorPair current = presets[0];
+  
+  @Override
+  public color getColor(float t) {
+    return current.getAt(t);
+  }
+  
+  @Override
+  public void processKeys() {
+    println("Gradient color->" + key);
+  }
+  
+  @Override
+  public int drawHelp(int y) {
+    return y;
+  }
+  
+  @Override
+  public BaseColor clone() {
+    return new TwoColorGradient();
+  }
+}
+
+
+
+/**
+*** Simple solid color function
+**/
 class SolidColor extends BaseColor {
   
   color[] presets = {
@@ -9,12 +78,24 @@ class SolidColor extends BaseColor {
   };
   int presetIndex = 0;
   
-  int r = 0;
-  int g = 240;
-  int b = 64;
+  int r = 221;
+  int g = 0;
+  int b = 0;
   
   color solid = presets[0];
   int d = 16;
+  
+    @Override
+  public BaseColor clone() {
+    SolidColor c =  new SolidColor();
+    c.r = this.r;
+    c.g = this.g;
+    c.b = this.b;
+    c.d = this.d;
+    c.solid = this.solid;
+    c.presetIndex = this.presetIndex;
+    return c;
+  }
   
   @Override
   public color getColor(float t) {
@@ -23,7 +104,7 @@ class SolidColor extends BaseColor {
   
   @Override
   public void processKeys() {
-    //println(key);
+    println("solid colors->" + key);
     switch (key) {
       case 'r':
         r += d;
@@ -62,17 +143,20 @@ class SolidColor extends BaseColor {
         if (presetIndex > presets.length - 1)
           presetIndex = 0;
         solid = presets[presetIndex];
+        r = solid >> 16 & 0xFF;
+        g = solid >> 8 & 0xFF;
+        b = solid & 0xFF;
         break;
       case '[':
         --presetIndex;
         if (presetIndex < 0)
           presetIndex = presets.length - 1;
         solid = presets[presetIndex];
+        r = solid >> 16 & 0xFF;
+        g = solid >> 8 & 0xFF;
+        b = solid & 0xFF;
         break;
     }
-    r = solid >> 16 & 0xFF;
-    g = solid >> 8 & 0xFF;
-    b = solid & 0xFF;
     solid = color(r, g, b);
   }
   

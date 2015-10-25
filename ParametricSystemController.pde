@@ -1,4 +1,4 @@
-import java.awt.event.KeyEvent;
+//import java.awt.event.KeyEvent;
 
 class ParametricSystemController extends DynamicSystem {
   
@@ -11,7 +11,7 @@ class ParametricSystemController extends DynamicSystem {
   SystemState state = SystemState.DEFAULT;
   
   public ParametricSystemController() {
-    current = new ParametricCurve(this);
+    current = new TrochoidParametricCurve(this);
     dynamicSystems.add(current);
     index = 0;
   }
@@ -97,6 +97,8 @@ class ParametricSystemController extends DynamicSystem {
           group.addElement(curve.getSvg(emulateBallpen));
         }
         svg.saveGroup("output/"+getFileName("vector", "svg"), group);
+        //todo add saving params to txt file
+        // curve.getParamsAsText();
         break;
       case 'b':
         emulateBallpen = !emulateBallpen;
@@ -129,17 +131,17 @@ class ParametricSystemController extends DynamicSystem {
         current = current.clone();
         dynamicSystems.add(current);
         index = dynamicSystems.size() - 1;
-        current.setSelected(true);
+        //current.setSelected(true);
         return;
     }
     current.setSelected(false);
     switch (keyCode) {
-      case 0x1a: // insert
-        current = new ParametricCurve(this);
+      case KeyEvent.VK_INSERT:
+        current = new TrochoidParametricCurve(this);
         dynamicSystems.add(current);
         index = dynamicSystems.size() - 1;
         break;
-      case 0x93: // delete
+      case KeyEvent.VK_DELETE:
         if (dynamicSystems.size() == 1)
           break;
         dynamicSystems.remove(index);
@@ -164,7 +166,7 @@ class ParametricSystemController extends DynamicSystem {
         current.setSelected(false);
         return;
     }
-    current.setSelected(true);
+    //current.setSelected(true);
     
     current.processEditParamKeys();
   }
@@ -175,7 +177,7 @@ class ParametricSystemController extends DynamicSystem {
     fill(0);
     text("Press > e < to enter param edit mode", 10, y); y += Constants.lineDrawStep;
     text("~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
-    text("Press > s < to  save SVG and render preview on 1000x1000 canvas", 10, y); y += Constants.lineDrawStep;
+    text("Press > s < to  save SVG, render preview on 1000x1000 canvas and save parameters to txt file", 10, y); y += Constants.lineDrawStep;
     
     text("Press > b < to " + (emulateBallpen ? "Disable" : "Enable") + " ballpen emulation while render to svg (warn this will double all curves)", 10, y); y += Constants.lineDrawStep;
     return y;
@@ -191,7 +193,7 @@ class ParametricSystemController extends DynamicSystem {
   
   @Override
   public int drawHelpEditColor(int y) {
-    current.drawHelpEditColor(y);
+    y = current.drawHelpEditColor(y);
     return y;
   }
 }
