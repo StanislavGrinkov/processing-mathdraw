@@ -4,6 +4,7 @@ abstract class BaseColor {
   public abstract void processKeys();
   public abstract int drawHelp(int y);
   public abstract BaseColor clone();
+  public abstract JSONObject getJSON();
 }
 
 class Gradient extends BaseColor
@@ -20,8 +21,20 @@ class Gradient extends BaseColor
     public ColorPosition clone() {
       return new ColorPosition(this.value, this.position);
     }
-  }
+    
+    public JSONObject getJSON() {
+      JSONObject json = new JSONObject();
+      json.setInt(Constants.Value, value);
+      json.setFloat(Constants.Position, position);
+      return json;
+    }
+  } // ColorPosition
   
+  
+  
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   class ColorPositionComparator implements Comparator<ColorPosition>
   {
     @Override
@@ -29,8 +42,13 @@ class Gradient extends BaseColor
     {
       return Float.compare(f1.position, f2.position);
     }
-  }
+  } // ColorPositionComparator
 
+  
+  
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public final class LinearColorStrip {
     Comparator<ColorPosition> currentComparator = new ColorPositionComparator();
     
@@ -55,6 +73,17 @@ class Gradient extends BaseColor
         }
         sort();
       }
+    }
+
+    public JSONObject getJSON() {
+      JSONObject json = new JSONObject();
+      json.setString(Constants.ObjectType, this.getClass().getName());
+      JSONArray strips = new JSONArray();
+      for (int i = 0; i < colors.size(); ++i) {
+        strips.setJSONObject(i, colors.get(i).getJSON());
+      }
+      json.setJSONArray(Constants.ColorPosition, strips);
+      return json;
     }
     
     private void sort() {
@@ -147,8 +176,8 @@ class Gradient extends BaseColor
     public color getAt(float t) {
       color start = 0;
       color end = 255;
-      t = Math.max(t, 0.0f);
-      t = Math.min(t, 1.0f);
+      t = Math.max(t, 0.00001f);
+      t = Math.min(t, 0.9999f);
       
       switch (colors.size()) {
         case 0:
@@ -210,10 +239,11 @@ class Gradient extends BaseColor
       int b = (c & 0xFF) + deltaB;
       colors.get(colorIndex).value = color(r, g, b);
     }
+    
     public String getColorAsText() {
       return "#" + hex(colors.get(colorIndex).value, 6);
     }
-  }
+  } // LinearColorStrip
 
   LinearColorStrip[] presets = {
     new LinearColorStrip(new color[] {#FF0000, #00FF00, #0000FF}, new float[] {0.0f, 0.5f, 1.0f})
@@ -223,6 +253,19 @@ class Gradient extends BaseColor
   LinearColorStrip current = presets[0];
   
   int d = 8;
+  
+  @Override
+  public JSONObject getJSON() {
+    JSONObject json = new JSONObject();
+    json.setString(Constants.ObjectType, this.getClass().getName());
+    JSONArray strips = new JSONArray();
+    for (int i = 0; i < presets.length; ++i) {
+      strips.setJSONObject(i, presets[i].getJSON());
+    }
+    json.setJSONArray(Constants.LinearColorStrip, strips);
+    json.setInt(Constants.Index, presetIndex);
+    return json;
+  }
   
   @Override
   public color getColor(float t) {
@@ -306,11 +349,11 @@ class Gradient extends BaseColor
     y = current.drawGradientColors(y);
     text(current.getColorAsText() + "(+r, +g, +b; -R, -G, -B) / " + "Delta: " + d + " (+d; -D)", 10, y); y += Constants.lineDrawStep;
     text("", 10, y); y += Constants.lineDrawStep;
-    text("Numpad > 4, 6 < to select gradient color stop", 10, y); y += Constants.lineDrawStep;
-    text("Numpad > 1, 3 < to move selected gradient color left or right", 10, y); y += Constants.lineDrawStep;
+    text("Numpad > 4, 6 < to select color stop", 10, y); y += Constants.lineDrawStep;
+    text("Numpad > 1, 3 < to adjust color stop position", 10, y); y += Constants.lineDrawStep;
     text("Use Insert/Delete to add/remove color stops", 10, y); y += Constants.lineDrawStep;
     text("> v < to reverse gradient direction", 10, y); y += Constants.lineDrawStep;
-    text("> V < to invert color value", 10, y); y += Constants.lineDrawStep;
+    text("> c < to invert color value", 10, y); y += Constants.lineDrawStep;
     text("use [ and ] to select preset gradients ", 10, y); y += Constants.lineDrawStep;
     return y;
   }

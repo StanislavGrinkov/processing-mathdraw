@@ -1,17 +1,9 @@
-enum SystemState {
-  DEFAULT,
-  EDIT_PARAMS,
-  EDIT_COLOR
-}
-
 abstract class DynamicSystem {
   protected boolean isSelected;
   protected String name;
   protected BaseColor currentColor;
   protected boolean isNegative = false;
-  
-  public abstract void drawMe(PGraphics pg);
-  
+ 
   public abstract void processDefaultKeys();
   public abstract void processEditColorKeys();
   public abstract void processEditParamKeys();
@@ -20,8 +12,9 @@ abstract class DynamicSystem {
   public abstract int drawHelpEditParams(int y);
   public abstract int drawHelpEditColor(int y);
   
+  public abstract void drawMe(PGraphics pg);
   public abstract RGroup getSvg();
-  
+  public abstract JSONObject getJSON();
   public abstract DynamicSystem clone();
   
   public void drawHelp(SystemState state) {
@@ -72,9 +65,16 @@ abstract class DynamicSystem {
     String h = nf(hour(), 2);
     String mm = nf(minute(), 2);
     String s = nf(second(), 2);
-    return String.format("%s-%d-%s-%sT%s%s%s.%s", prefix, y, m, d, h, mm, s, ext);
+    return String.format("%d-%s-%sT%s%s%s-%s.%s", y, m, d, h, mm, s, prefix, ext);
   }
   
   public void setSelected(boolean state) { isSelected = state;};
   public boolean getSelected() {return isSelected; };
+}
+
+
+enum SystemState {
+  DEFAULT,
+  EDIT_PARAMS,
+  EDIT_COLOR
 }

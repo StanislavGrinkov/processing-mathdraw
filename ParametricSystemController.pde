@@ -1,6 +1,6 @@
 //import java.awt.event.KeyEvent;
 
-class ParametricSystemController extends DynamicSystem {
+class ParametricSystemController extends DynamicSystem{
   
   ArrayList<DynamicSystem> dynamicSystems = new ArrayList<DynamicSystem>(); 
   DynamicSystem current = null;
@@ -17,7 +17,23 @@ class ParametricSystemController extends DynamicSystem {
   
   @Override
   public RGroup getSvg() {
-    return null;
+    RGroup group = new RGroup();
+    for (DynamicSystem curve: dynamicSystems) {
+      group.addElement(curve.getSvg());
+    }
+    return group;
+  }
+  
+  @Override
+  public JSONObject getJSON() {
+    JSONObject json = new JSONObject();
+    json.setBoolean(Constants.blackBackground, isNegative);
+    JSONArray jsonDS = new JSONArray();
+    for (int i = 0; i < dynamicSystems.size(); ++i) {
+      jsonDS.setJSONObject(i, dynamicSystems.get(i).getJSON());
+    }
+    json.setJSONArray(Constants.DynamicSystems, jsonDS);
+    return json;
   }
   
   int drawDynamicSystemsCount(int y) {
@@ -67,30 +83,37 @@ class ParametricSystemController extends DynamicSystem {
   public void processDefaultKeys() {
     switch(key) {
       case 's':
-        PGraphics pg = createGraphics(1000, 1000, P3D, null);
-        pg.beginDraw();
-        pg.smooth(8);
-        pg.background(isNegative ? 0 : 255);
-        for (DynamicSystem curve: dynamicSystems) {
-          curve.drawMe(pg);
-        }
-        pg.endDraw();
-        pg.save("output/"+getFileName("preview", "png"));
-        
-        RSVG svg = new RSVG();
-        RGroup group = new RGroup();
-        for (DynamicSystem curve: dynamicSystems) {
-          group.addElement(curve.getSvg());
-        }
-        svg.saveGroup("output/"+getFileName("vector", "svg"), group);
-        //todo add saving params to txt file
-        // curve.getParamsAsText();
+        saveJson();
+        savePreview();
+        saveSvg();
         break;
       case 'e':
         state = SystemState.EDIT_PARAMS;
         current.setSelected(true);
         break;
     }
+  }
+  
+  private void saveJson() {
+    String fileName = "output/"+getFileName("json", "json");
+    saveJSONObject(getJSON(), fileName);
+  }
+  
+  private void saveSvg() {
+    String fileName = "output/"+getFileName("vector", "svg");
+    new RSVG().saveGroup(fileName, getSvg());
+  }
+  
+  private void savePreview() {
+    PGraphics pg = createGraphics(1000, 1000, P3D, null);
+    pg.beginDraw();
+    pg.smooth(8);
+    pg.background(isNegative ? 0 : 255);
+    for (DynamicSystem curve: dynamicSystems) {
+      curve.drawMe(pg);
+    }
+    pg.endDraw();
+    pg.save("output/"+getFileName("preview", "png"));
   }
   
   @Override

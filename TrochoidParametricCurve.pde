@@ -117,6 +117,31 @@ class TrochoidParametricCurve extends DynamicSystem {
       pathPoints.add(new PathPoint(x, y));
     }    
   }
+  
+  @Override
+  public JSONObject getJSON() {
+    JSONObject json = new JSONObject();
+    json.setString(Constants.ObjectType, this.getClass().getName());
+    //todo save all step functions
+    json.setJSONObject(Constants.StepFunc, currentStepFunc.getJSON());
+    json.setJSONObject(Constants.ColorFunc, currentColor.getJSON());
+    json.setFloat(Constants.A, a);
+    json.setFloat(Constants.B, b);
+    json.setFloat(Constants.H, h);
+    json.setFloat(Constants.Zoom, zoom);
+    json.setInt(Constants.Revolutions, rev);
+    json.setFloat(Constants.RotationAngle, rotationAngle);
+    json.setFloat(Constants.IterationAngle, iterationAngle);
+    json.setInt(Constants.Iterations, iterations);
+    json.setFloat(Constants.CenterX, center_x);
+    json.setFloat(Constants.CenterY, center_y);
+    json.setBoolean(Constants.ApplyStepH, applyStepFuncToH);
+    json.setBoolean(Constants.ApplyStepZoom, applyStepFuncToZoom);
+    json.setBoolean(Constants.Epitrochoid, isEpitrochoid);
+    json.setInt(Constants.StepFuncIndex, stepFuncIndex);
+    
+    return json;
+  }
 
   @Override
   public RGroup getSvg() {
@@ -154,7 +179,7 @@ class TrochoidParametricCurve extends DynamicSystem {
   @Override
   public void drawMe(PGraphics pg) {
     pg.pushMatrix();
-    pg.translate(width / 2, height / 2);
+    pg.translate(pg.width / 2, pg.height / 2);
     pg.rotate(radians(rotationAngle));
     pg.noFill();
 
@@ -168,6 +193,7 @@ class TrochoidParametricCurve extends DynamicSystem {
       
       pg.beginShape();
       pg.stroke(vertexColor);
+      //pg.fill(currentColor.getColor(1.0f - colorStep * i));
       for (int t = 0; t < pathPoints.size(); ++t) {
         PathPoint p = pathPoints.get(t);
         pg.vertex(p.x, p.y);

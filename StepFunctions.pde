@@ -17,6 +17,17 @@ abstract class StepFuncBase {
   public abstract String description();
   public abstract StepFuncBase clone();
   
+  public JSONObject getJSON() {
+    JSONObject json = new JSONObject();
+    json.setString(Constants.ObjectType, this.getClass().getName());
+    json.setFloat(Constants.Value, value);
+    json.setFloat(Constants.Min, min);
+    json.setFloat(Constants.Max, max);
+    json.setFloat(Constants.Step, step);
+    json.setFloat(Constants.SmallStep, smallStep);
+    return json;
+  }
+  
   public int drawHelp(int y) {
     text(description(), 10, y); y += Constants.lineDrawStep;
     text(String.format("step value = %f [%f, %f] (+d,-D) (+f, -F)", value, min, max), 10, y); y += Constants.lineDrawStep;
