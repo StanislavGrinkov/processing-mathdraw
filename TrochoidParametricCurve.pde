@@ -119,7 +119,7 @@ class TrochoidParametricCurve extends DynamicSystem {
   }
 
   @Override
-  public RGroup getSvg(boolean emulateBallpen) {
+  public RGroup getSvg() {
     colorMode(RGB, 255);
     RGroup group = new RGroup();
     float h_ = h;
@@ -164,7 +164,7 @@ class TrochoidParametricCurve extends DynamicSystem {
     float colorStep = 1.0f / iterations;
     for (int i = 0; i < iterations; ++i) {
       calculatePath(h_, zoom_);
-      color vertexColor = isSelected ? #0000FF : currentColor.getColor(colorStep * i); //float lerpStep = 1.0 / pathPoints.size(); //colorizer.getColor(t*lerpStep);
+      color vertexColor = isSelected ? #000000 : currentColor.getColor(colorStep * i); //float lerpStep = 1.0 / pathPoints.size(); //colorizer.getColor(t*lerpStep);
       
       pg.beginShape();
       pg.stroke(vertexColor);
@@ -208,7 +208,6 @@ class TrochoidParametricCurve extends DynamicSystem {
     switch (keyCode) {
       case KeyEvent.VK_BACK_SPACE:
         controller.setState(SystemState.EDIT_PARAMS);
-        //isSelected = true;
         break;
     }
   }
@@ -222,27 +221,23 @@ class TrochoidParametricCurve extends DynamicSystem {
     float stepAngle = 0.1f;
     currentStepFunc.processKeys();
     
-    if (key == CODED) {
-      switch (keyCode) {
-        case UP:
-          center_y -= d_moveStep;
-          break;
-        case DOWN:
-          center_y += d_moveStep;
-          break;
-        case LEFT:
-          center_x -= d_moveStep;
-          break;
-        case RIGHT:
-          center_x += d_moveStep;
-          break;
-      }
-      return;
+    isSelected = false;
+    
+    switch(keyCode) {
+      case KeyEvent.VK_UP:
+        center_y -= d_moveStep;
+        break;
+      case KeyEvent.VK_DOWN:
+        center_y += d_moveStep;
+        break;
+      case KeyEvent.VK_LEFT:
+        center_x -= d_moveStep;
+        break;
+      case KeyEvent.VK_RIGHT:
+        center_x += d_moveStep;
+        break;
     }
-    
-    //processSetDefaultParamKeys();
-    
-    switch (key) {
+    switch(key) {
       case 'a':
         a += r_step;
         if (a == 0.0f || b == a)
@@ -311,7 +306,6 @@ class TrochoidParametricCurve extends DynamicSystem {
         break;
       case 'e':
         controller.setState(SystemState.EDIT_COLOR);
-        this.isSelected = false;
         break;
       case ',':
         --stepFuncIndex;

@@ -16,7 +16,7 @@ class ParametricSystemController extends DynamicSystem {
   }
   
   @Override
-  public RGroup getSvg(boolean emulateBallpen) {
+  public RGroup getSvg() {
     return null;
   }
   
@@ -52,6 +52,11 @@ class ParametricSystemController extends DynamicSystem {
     pg.popMatrix();
     drawHelp(state);
   }
+
+  public void setState(SystemState state) {
+    this.state = state;
+    redraw();
+  }
   
   public void processKeys() {
     this.processKeys(state);
@@ -60,10 +65,7 @@ class ParametricSystemController extends DynamicSystem {
   
   @Override
   public void processDefaultKeys() {
-    switch (key) {
-      case 'w':
-        isNegative = !isNegative;
-        return;
+    switch(key) {
       case 's':
         PGraphics pg = createGraphics(1000, 1000, P3D, null);
         pg.beginDraw();
@@ -78,7 +80,7 @@ class ParametricSystemController extends DynamicSystem {
         RSVG svg = new RSVG();
         RGroup group = new RGroup();
         for (DynamicSystem curve: dynamicSystems) {
-          group.addElement(curve.getSvg(false));
+          group.addElement(curve.getSvg());
         }
         svg.saveGroup("output/"+getFileName("vector", "svg"), group);
         //todo add saving params to txt file
@@ -91,40 +93,22 @@ class ParametricSystemController extends DynamicSystem {
     }
   }
   
-  public void setState(SystemState state) {
-    this.state = state;
-    redraw();
-  }
-  
   @Override
   public void processEditColorKeys() {
-    switch(key)
-    {
-      case 'w':
-        isNegative = !isNegative;
-        return;
-    }
     current.processEditColorKeys();
   }
   
   @Override
   public void processEditParamKeys() {
-    switch (key) {
-      case 'w':
-        isNegative = !isNegative;
-        return;
-      case 'p':
+    switch(keyCode) {
+      case KeyEvent.VK_P:
         current.setSelected(!current.getSelected());
         return;
-      case 'c':
-        current.setSelected(false);
+      case KeyEvent.VK_C:
         current = current.clone(); //<>//
         dynamicSystems.add(current);
         index = dynamicSystems.size() - 1;
         return;
-    }
-    current.setSelected(false);
-    switch (keyCode) {
       case KeyEvent.VK_INSERT:
         current = new TrochoidParametricCurve(this);
         dynamicSystems.add(current);
@@ -161,8 +145,6 @@ class ParametricSystemController extends DynamicSystem {
   
   @Override
   public int drawHelpDefault(int y) {
-    textSize(14);
-    text("Press > w < to change background to black/white", 10, y); y += Constants.lineDrawStep;
     text("Press > e < to enter param edit mode", 10, y); y += Constants.lineDrawStep;
     text("~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
     text("Press > s < to  save SVG, render preview on 1000x1000 canvas and save parameters to txt file", 10, y); y += Constants.lineDrawStep;
@@ -175,7 +157,6 @@ class ParametricSystemController extends DynamicSystem {
     y = current.drawHelpEditParams(y);
     text("~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
     text("Press > c < to clone current DynamicSystem", 10, y); y += Constants.lineDrawStep;
-    text("Press > w < to change background to black/white", 10, y); y += Constants.lineDrawStep;
     return y;
   }
   
@@ -183,7 +164,6 @@ class ParametricSystemController extends DynamicSystem {
   public int drawHelpEditColor(int y) {
     y = current.drawHelpEditColor(y);
     text("~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
-    text("Press > w < to change background to black/white", 10, y); y += Constants.lineDrawStep;
     return y;
   }
 }

@@ -20,29 +20,37 @@ abstract class DynamicSystem {
   public abstract int drawHelpEditParams(int y);
   public abstract int drawHelpEditColor(int y);
   
-  public abstract RGroup getSvg(boolean emulateBallpen);
+  public abstract RGroup getSvg();
   
   public abstract DynamicSystem clone();
   
   public void drawHelp(SystemState state) {
     textSize(14);
-    fill(!isNegative ? 0 : 255); // depends on bg color
+    fill(!isNegative ? 0 : 255);
     int y = 20;
+    text("Press > w < to change background to black/white", 10, y); y += Constants.lineDrawStep;   
     if (state == SystemState.DEFAULT) {
       drawHelpDefault(y);
       return;
     }
     if (state == SystemState.EDIT_PARAMS) {
+      text("~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
       drawHelpEditParams(y);
       return;
     }
     if (state == SystemState.EDIT_COLOR) {
+      text("~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
       drawHelpEditColor(y);
       return;
     }
   };
   
   public void processKeys(SystemState state) {
+    switch(key) {
+      case 'w':
+        isNegative = !isNegative;
+        return;
+    }
     if (state == SystemState.DEFAULT) {
       processDefaultKeys();
       return;

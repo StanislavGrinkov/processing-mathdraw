@@ -35,7 +35,7 @@ class Gradient extends BaseColor
     Comparator<ColorPosition> currentComparator = new ColorPositionComparator();
     
     ArrayList<ColorPosition> colors = new ArrayList<ColorPosition>();
-    boolean isReversed = false;
+    int colorIndex = 0;
     
     private LinearColorStrip() {}
 
@@ -53,29 +53,95 @@ class Gradient extends BaseColor
         for (int i = 0; i < colors.length; ++i) {
           this.colors.add(new ColorPosition(colors[i], positions[i]));
         }
-        Collections.sort(this.colors, currentComparator);
+        sort();
       }
+    }
+    
+    private void sort() {
+      Collections.sort(this.colors, currentComparator);
     }
     
     public void reverse() {
       for (int i = 0; i < colors.size(); ++i) {
         colors.get(i).position = 1 - colors.get(i).position; 
       }
-      Collections.sort(this.colors, currentComparator);
-      isReversed = !isReversed;
+      sort();
     }
     
     public void invert() {
       for (int i = 0; i < colors.size(); ++i) {
-        colors.get(i).value = invert(colors.get(i).value);
+        color c = colors.get(i).value;
+        int r = 255 - (c >> 16 & 0xFF);
+        int g = 255 - (c >> 8 & 0xFF);
+        int b = 255 - (c & 0xFF);
+        colors.get(i).value = color(r, g, b);
       }
     }
     
-    private color invert(color c) {
-      int r = 255 - (c >> 16 & 0xFF);
-      int g = 255 - (c >> 8 & 0xFF);
-      int b = 255 - (c & 0xFF);
-      return color(r, g, b);
+    public ColorPosition getColorPos(int index)
+    {
+      index = Math.max(index, 0);
+      index = Math.min(index, colors.size() - 1);
+      return colors.get(index);
+    }
+    
+    public void nextColor() {
+      ++colorIndex;
+      if (colorIndex >= colors.size()) {
+        colorIndex = 0;
+      }
+    }
+    
+    public void prevColor() {
+      --colorIndex;
+      if (colorIndex < 0) {
+        colorIndex = colors.size() - 1;
+      }
+    }
+    
+    public boolean isEdgeStops() {
+      return colorIndex == 0 || colorIndex == colors.size() - 1;
+    }
+    
+    public void adjustColorPosition(float delta)
+    {
+      if (isEdgeStops()) {
+        return;
+      }
+      float p = colors.get(colorIndex).position;
+      p += delta;
+      p = Math.max(p, 0.01);
+      p = Math.min(p, 0.99);
+      colors.get(colorIndex).position = p;
+      sort();
+    }
+    
+    private int drawGradientColors(int y) {
+      y -= 10;
+      int w = 980;
+      float step = 1.0f / w;
+      for (int i = 0; i < w; ++i) {
+        fill(getAt(i*step));
+        noStroke();
+        rect(10 +i, y, 1, 15);
+      }
+      
+      y += 15;
+      for (int i = 0; i < colors.size(); ++i) {
+        color c = colors.get(i).value;
+        float p = colors.get(i).position;
+        
+        fill(c);
+        noStroke();
+        if (i == colorIndex) {
+          stroke(0);
+          strokeWeight(1.5f);
+        }
+        float x = w * p + 10;
+        x= Math.min(x, 985);
+        rect(x, y, 5, 15);
+      }
+      return y + 30;
     }
     
     public color getAt(float t) {
@@ -115,8 +181,37 @@ class Gradient extends BaseColor
       for (ColorPosition cp : colors) {
         clone.colors.add(cp.clone());
       }
-      clone.isReversed = this.isReversed;
       return clone;
+    }
+    
+    public void insertColorStop() {
+      if (colorIndex == colors.size() - 1) {
+        return;
+      }
+      float p = colors.get(colorIndex).position;
+      float p1 = colors.get(colorIndex + 1).position;
+      float f = p + (p1 - p) / 2.0f;
+      colors.add(new ColorPosition(getAt(f), f));
+      sort();
+      ++colorIndex;
+    }
+    
+    public void deleteColorStop() {
+      if (isEdgeStops() || colors.size() == 2) {
+        return;
+      }
+      colors.remove(colorIndex);
+    }
+    
+    public void adjustColor(int deltaR, int deltaG, int deltaB) {
+      color c = colors.get(colorIndex).value;
+      int r = (c >> 16 & 0xFF) + deltaR;
+      int g = (c >> 8 & 0xFF)  + deltaG;
+      int b = (c & 0xFF) + deltaB;
+      colors.get(colorIndex).value = color(r, g, b);
+    }
+    public String getColorAsText() {
+      return "#" + hex(colors.get(colorIndex).value, 6);
     }
   }
 
@@ -127,6 +222,8 @@ class Gradient extends BaseColor
   
   LinearColorStrip current = presets[0];
   
+  int d = 8;
+  
   @Override
   public color getColor(float t) {
     return current.getAt(t);
@@ -134,11 +231,59 @@ class Gradient extends BaseColor
 
   @Override
   public void processKeys() {
+    switch(keyCode) {
+      case KeyEvent.VK_INSERT:
+        current.insertColorStop();
+        break;
+      case KeyEvent.VK_DELETE:
+        current.deleteColorStop();
+        break;
+      case KeyEvent.VK_NUMPAD4:  
+      case LEFT:
+        current.prevColor();
+        break;
+      case KeyEvent.VK_NUMPAD6:
+      case RIGHT:
+        current.nextColor();
+        break;
+      case KeyEvent.VK_NUMPAD1:
+        current.adjustColorPosition(-0.01);
+        break;  
+      case KeyEvent.VK_NUMPAD3:
+        current.adjustColorPosition(0.01);
+        break;
+    }
     switch(key) {
-      case 'r':
+     case 'r':
+       current.adjustColor(d, 0, 0);
+       break;
+     case 'R':
+       current.adjustColor(-d, 0, 0);
+       break;
+     case 'g':
+       current.adjustColor(0, d, 0);
+       break;
+     case 'G':
+       current.adjustColor(0, -d, 0);
+       break;
+     case 'b':
+       current.adjustColor(0, 0, d);
+       break;
+     case 'B':
+       current.adjustColor(0, 0, -d);
+       break;
+     case 'd':
+       d = d >> 2;
+       d = d > 64 ? 64 : d;
+       break;
+     case 'D':
+       d = d << 2;
+       d = d < 2 ? 1 : d;
+       break;
+      case 'v':
         current.reverse();
         break;
-      case 'R':
+      case 'c':
         current.invert();
         break;
       case ']':
@@ -155,22 +300,18 @@ class Gradient extends BaseColor
         break;
     }
   }
-  
+ 
   @Override
   public int drawHelp(int y) {
-    //text("Red: " + r + " (+r; -R)", 10, y); y += Constants.lineDrawStep;
-    //text("Green: " + g + " (+g; -G)", 10, y); y += Constants.lineDrawStep;
-    //text("Blue: " + b + " (+b; -B)", 10, y); y += Constants.lineDrawStep;
-    //text("Delta: " + d + " (+d; -D)", 10, y); y += Constants.lineDrawStep;   
-    //text("Current: #" + hex(current, 6), 10, y); y += Constants.lineDrawStep;
-    //fill(current);
-    //rect(10, y - Constants.lineDrawStep + 2, 50, 15);
-    //fill(0);
-    //y += Constants.lineDrawStep + 5;
-    text("> r < to reverse gradient direction", 10, y); y += Constants.lineDrawStep;
-    text("> R < to invert color value", 10, y); y += Constants.lineDrawStep;
+    y = current.drawGradientColors(y);
+    text(current.getColorAsText() + "(+r, +g, +b; -R, -G, -B) / " + "Delta: " + d + " (+d; -D)", 10, y); y += Constants.lineDrawStep;
+    text("", 10, y); y += Constants.lineDrawStep;
+    text("Numpad > 4, 6 < to select gradient color stop", 10, y); y += Constants.lineDrawStep;
+    text("Numpad > 1, 3 < to move selected gradient color left or right", 10, y); y += Constants.lineDrawStep;
+    text("Use Insert/Delete to add/remove color stops", 10, y); y += Constants.lineDrawStep;
+    text("> v < to reverse gradient direction", 10, y); y += Constants.lineDrawStep;
+    text("> V < to invert color value", 10, y); y += Constants.lineDrawStep;
     text("use [ and ] to select preset gradients ", 10, y); y += Constants.lineDrawStep;
-    //drawPresetColors(y - Constants.lineDrawStep + 2); y += Constants.lineDrawStep;
     return y;
   }
   
@@ -180,79 +321,5 @@ class Gradient extends BaseColor
     g.current = current.clone();
     g.presetIndex = this.presetIndex;
     return g;
-  }
-  
+  } 
 }
-
-  //@Override
-  //public void processKeys() {
-  //  println("solid colors->" + key);
-  //  switch (key) {
-  //    case 'r':
-  //      r += d;
-  //      r = r > 255 ? 255 : r;
-  //      break;
-  //    case 'R':
-  //      r -= d;
-  //      r = r < 0 ? 0 : r;
-  //      break;
-  //    case 'g':
-  //      g += d;
-  //      g = g > 255 ? 255 : g;
-  //      break;
-  //    case 'G':
-  //      g -= d;
-  //      g = g < 0 ? 0 : g;
-  //      break;
-  //    case 'b':
-  //      b += d;
-  //      b = b > 255 ? 255 : b;
-  //      break;
-  //    case 'B':
-  //      b -= d;
-  //      b = b < 0 ? 0 : b;
-  //      break;
-  //    case 'd':
-  //      d = d * 2;
-  //      d = d > 64 ? 64 : d;
-  //      break;
-  //    case 'D':
-  //      d = d / 2;
-  //      d = d < 2 ? 1 : d;
-  //      break;
-  //    case ']':
-  //      ++presetIndex;
-  //      if (presetIndex > presets.length - 1)
-  //        presetIndex = 0;
-  //      current = presets[presetIndex];
-  //      r = current >> 16 & 0xFF;
-  //      g = current >> 8 & 0xFF;
-  //      b = current & 0xFF;
-  //      break;
-  //    case '[':
-  //      --presetIndex;
-  //      if (presetIndex < 0)
-  //        presetIndex = presets.length - 1;
-  //      current = presets[presetIndex];
-  //      r = current >> 16 & 0xFF;
-  //      g = current >> 8 & 0xFF;
-  //      b = current & 0xFF;
-  //      break;
-  //  }
-  //  current = color(r, g, b);
-  //}
-  
-  //public void drawPresetColors(int y) {
-  //  int w = 20;
-  //  for (int i = 0; i < presets.length; ++i) {
-  //    color c = presets[i];
-  //    fill(c);
-  //    noStroke();
-  //    if (i == presetIndex) {
-  //      stroke(0);
-  //      strokeWeight(1.5f);
-  //    }
-  //    rect(10 + w * i, y, w, 15);
-  //    fill(0);
-  //  }
-  //}
