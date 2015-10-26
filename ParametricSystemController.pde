@@ -1,6 +1,6 @@
 //import java.awt.event.KeyEvent;
 
-class ParametricSystemController extends DynamicSystem{
+class ParametricSystemController extends DynamicSystem {
   
   ArrayList<DynamicSystem> dynamicSystems = new ArrayList<DynamicSystem>(); 
   DynamicSystem current = null;

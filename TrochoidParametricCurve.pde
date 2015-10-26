@@ -3,10 +3,7 @@ import geomerative.*;
 class TrochoidParametricCurve extends DynamicSystem {
   
   int colorFuncIndex = 0;
-  
-  BaseColor[] colorFunctions = {
-    new Gradient()    
-  };
+  ArrayList<BaseColor> colorFunctions = new ArrayList<BaseColor>();
   
   final class PathPoint {
     public float x;
@@ -48,7 +45,8 @@ class TrochoidParametricCurve extends DynamicSystem {
   public TrochoidParametricCurve(ParametricSystemController controller) {
     name = "PC-" + Math.round(Math.random()*5000);
     this.controller = controller;
-    currentColor = colorFunctions[colorFuncIndex];
+    colorFunctions.add(new Gradient());
+    currentColor = colorFunctions.get(0);
   }
   
   @Override
@@ -73,10 +71,10 @@ class TrochoidParametricCurve extends DynamicSystem {
     pc.stepFuncIndex = this.stepFuncIndex;
     pc.currentStepFunc = pc.stepFunctions[this.stepFuncIndex];
     
-    for (int i = 0; i < colorFunctions.length; ++i) {
-      pc.colorFunctions[i] = this.colorFunctions[i].clone();
+    for (int i = 0; i < colorFunctions.size(); ++i) {
+      pc.colorFunctions.add(this.colorFunctions.get(i).clone());
     }
-    pc.currentColor = pc.colorFunctions[this.colorFuncIndex];
+    pc.currentColor = pc.colorFunctions.get(pc.colorFuncIndex);
     return pc;
   }
   
@@ -122,8 +120,11 @@ class TrochoidParametricCurve extends DynamicSystem {
   public JSONObject getJSON() {
     JSONObject json = new JSONObject();
     json.setString(Constants.ObjectType, this.getClass().getName());
+    
     //todo save all step functions
     json.setJSONObject(Constants.StepFunc, currentStepFunc.getJSON());
+    
+    //todo save all color functions
     json.setJSONObject(Constants.ColorFunc, currentColor.getJSON());
     json.setFloat(Constants.A, a);
     json.setFloat(Constants.B, b);
@@ -216,26 +217,50 @@ class TrochoidParametricCurve extends DynamicSystem {
   
   @Override
   public void processEditColorKeys() {
-    currentColor.processKeys();
     switch (key) {
       case ',':
         --colorFuncIndex;
         if (colorFuncIndex < 0)
-          colorFuncIndex = colorFunctions.length - 1;
-        currentColor = colorFunctions[colorFuncIndex];
+          colorFuncIndex = colorFunctions.size() - 1;
+        currentColor = colorFunctions.get(colorFuncIndex);
         break;
       case '.':
         ++colorFuncIndex;
-        if (colorFuncIndex > colorFunctions.length - 1)
+        if (colorFuncIndex > colorFunctions.size() - 1)
           colorFuncIndex = 0;
-        currentColor = colorFunctions[colorFuncIndex];
+        currentColor = colorFunctions.get(colorFuncIndex);
         break;
     }
     switch (keyCode) {
+      case KeyEvent.VK_1:
+      case KeyEvent.VK_2:
+      case KeyEvent.VK_3:
+      case KeyEvent.VK_4:
+      case KeyEvent.VK_5:
+      case KeyEvent.VK_6:
+      case KeyEvent.VK_7:
+      case KeyEvent.VK_8:
+      case KeyEvent.VK_9:
+        currentColor.generateRandom(keyCode - 48);
+        return;
       case KeyEvent.VK_BACK_SPACE:
         controller.setState(SystemState.EDIT_PARAMS);
         break;
+      case KeyEvent.VK_INSERT:
+        currentColor = new Gradient();
+        colorFunctions.add(currentColor);
+        colorFuncIndex = colorFunctions.size() - 1;
+        break;
+      case KeyEvent.VK_DELETE:
+        if (colorFunctions.size() == 1)
+          break;
+        colorFunctions.remove(colorFuncIndex);
+        if (colorFuncIndex > colorFunctions.size() - 1)
+          --colorFuncIndex;
+        currentColor = colorFunctions.get(colorFuncIndex);
+        break;
     }
+    currentColor.processKeys();
   }
   
   @Override
@@ -390,8 +415,8 @@ class TrochoidParametricCurve extends DynamicSystem {
   @Override
   public int drawHelpEditColor(int y) {
     y = currentColor.drawHelp(y);
-    text("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
-    text("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
+    text("", 10, y); y += Constants.lineDrawStep;
+    text("Press >Insert< / >Delete< to add/remove color functions", 10, y); y += Constants.lineDrawStep;
     text("use < and > to change color function.", 10, y); y += Constants.lineDrawStep;
     text("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
     text("Press > backspace < to exit from Edit Color mode", 10, y); y += Constants.lineDrawStep;

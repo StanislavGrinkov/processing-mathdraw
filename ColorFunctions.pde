@@ -1,14 +1,17 @@
 abstract class BaseColor {
-  protected int presetIndex = 0;
   public abstract color getColor(float t);
   public abstract void processKeys();
   public abstract int drawHelp(int y);
   public abstract BaseColor clone();
   public abstract JSONObject getJSON();
+  public abstract void generateRandom(int count /*OfInnerStops*/);
 }
 
 class Gradient extends BaseColor
 {
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public final class ColorPosition
   {
     public color value;
@@ -225,6 +228,11 @@ class Gradient extends BaseColor
       ++colorIndex;
     }
     
+    public void insertColorStop(ColorPosition cp) {
+      colors.add(cp);
+      sort();
+    }
+    
     public void deleteColorStop() {
       if (isEdgeStops() || colors.size() == 2) {
         return;
@@ -241,16 +249,31 @@ class Gradient extends BaseColor
     }
     
     public String getColorAsText() {
-      return "#" + hex(colors.get(colorIndex).value, 6);
+      return "#" + hex(colors.get(colorIndex).value, 6) + " <- " + colors.get(colorIndex).position;
+    }
+    
+    public void generateRandom(int count /*OfInnerStops*/) {
+      int totalStops = count + 2;
+      colors.clear();
+      float step = 1.0f / (totalStops - 1);
+      for (int i = 0; i < totalStops; ++i) {
+        int r = (int)(Math.random()*255);
+        int g = (int)(Math.random()*255);
+        int b = (int)(Math.random()*255);
+        //float p = i * step;
+        float p = (float)Math.random() - 0.1;
+        p = Math.max(p, 0.01);
+        p = Math.min(p, 0.99);
+        p = i == 0 ? 0.0: p;
+        p = i == (totalStops - 1) ? 1.0: p;
+        colors.add(new ColorPosition(color(r, g, b), p));
+        colorIndex = 0;
+      }
+      sort();
     }
   } // LinearColorStrip
 
-  LinearColorStrip[] presets = {
-    new LinearColorStrip(new color[] {#FF0000, #00FF00, #0000FF}, new float[] {0.0f, 0.5f, 1.0f})
-    , new LinearColorStrip(new color[] {#FF0000, #00FF00, #0000FF, #FF0000, #00FF00, #0000FF}, new float[] {0.0f, 0.1f, 0.4f, 0.5f, 0.9f, 1.0f})
-  };
-  
-  LinearColorStrip current = presets[0];
+  LinearColorStrip current = new LinearColorStrip(new color[] {#FF0000, #00FF00, #0000FF}, new float[] {0.0f, 0.5f, 1.0f});
   
   int d = 8;
   
@@ -258,12 +281,7 @@ class Gradient extends BaseColor
   public JSONObject getJSON() {
     JSONObject json = new JSONObject();
     json.setString(Constants.ObjectType, this.getClass().getName());
-    JSONArray strips = new JSONArray();
-    for (int i = 0; i < presets.length; ++i) {
-      strips.setJSONObject(i, presets[i].getJSON());
-    }
-    json.setJSONArray(Constants.LinearColorStrip, strips);
-    json.setInt(Constants.Index, presetIndex);
+    json.setJSONObject(Constants.LinearColorStrip, current.getJSON());
     return json;
   }
   
@@ -275,10 +293,10 @@ class Gradient extends BaseColor
   @Override
   public void processKeys() {
     switch(keyCode) {
-      case KeyEvent.VK_INSERT:
+      case KeyEvent.VK_NUMPAD7:
         current.insertColorStop();
         break;
-      case KeyEvent.VK_DELETE:
+      case KeyEvent.VK_NUMPAD9:
         current.deleteColorStop();
         break;
       case KeyEvent.VK_NUMPAD4:  
@@ -329,18 +347,6 @@ class Gradient extends BaseColor
       case 'c':
         current.invert();
         break;
-      case ']':
-        ++presetIndex;
-        if (presetIndex > presets.length - 1)
-          presetIndex = 0;
-        current = presets[presetIndex];
-        break;
-      case '[':
-        --presetIndex;
-        if (presetIndex < 0)
-          presetIndex = presets.length - 1;
-        current = presets[presetIndex];
-        break;
     }
   }
  
@@ -349,20 +355,24 @@ class Gradient extends BaseColor
     y = current.drawGradientColors(y);
     text(current.getColorAsText() + "(+r, +g, +b; -R, -G, -B) / " + "Delta: " + d + " (+d; -D)", 10, y); y += Constants.lineDrawStep;
     text("", 10, y); y += Constants.lineDrawStep;
+    text("Numpad > 7, 9 < to insert color stop after current or delete current color stop", 10, y); y += Constants.lineDrawStep;
     text("Numpad > 4, 6 < to select color stop", 10, y); y += Constants.lineDrawStep;
     text("Numpad > 1, 3 < to adjust color stop position", 10, y); y += Constants.lineDrawStep;
-    text("Use Insert/Delete to add/remove color stops", 10, y); y += Constants.lineDrawStep;
+    text("Use 1-9 to generate N+2 color random gradient", 10, y); y += Constants.lineDrawStep;
     text("> v < to reverse gradient direction", 10, y); y += Constants.lineDrawStep;
     text("> c < to invert color value", 10, y); y += Constants.lineDrawStep;
-    text("use [ and ] to select preset gradients ", 10, y); y += Constants.lineDrawStep;
     return y;
+  }
+  
+  @Override
+  public void generateRandom(int count /*OfInnerStops*/) {
+    current.generateRandom(count);
   }
   
   @Override
   public BaseColor clone() {
     Gradient g = new Gradient(); //<>//
     g.current = current.clone();
-    g.presetIndex = this.presetIndex;
     return g;
   } 
 }
