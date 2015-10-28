@@ -218,13 +218,13 @@ class TrochoidParametricCurve extends DynamicSystem {
   @Override
   public void processEditColorKeys() {
     switch (key) {
-      case ',':
+      case '[':
         --colorFuncIndex;
         if (colorFuncIndex < 0)
           colorFuncIndex = colorFunctions.size() - 1;
         currentColor = colorFunctions.get(colorFuncIndex);
         break;
-      case '.':
+      case ']':
         ++colorFuncIndex;
         if (colorFuncIndex > colorFunctions.size() - 1)
           colorFuncIndex = 0;
@@ -416,8 +416,8 @@ class TrochoidParametricCurve extends DynamicSystem {
   public int drawHelpEditColor(int y) {
     y = currentColor.drawHelp(y);
     text("", 10, y); y += Constants.lineDrawStep;
-    text("Press >Insert< / >Delete< to add/remove color functions", 10, y); y += Constants.lineDrawStep;
-    text("use < and > to change color function.", 10, y); y += Constants.lineDrawStep;
+    text("Press > Insert < / > Delete < to add/remove color functions", 10, y); y += Constants.lineDrawStep;
+    text("use [ and ] to change color function.", 10, y); y += Constants.lineDrawStep;
     text("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", 10, y); y += Constants.lineDrawStep;
     text("Press > backspace < to exit from Edit Color mode", 10, y); y += Constants.lineDrawStep;
     return y;

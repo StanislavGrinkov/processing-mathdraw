@@ -240,12 +240,22 @@ class Gradient extends BaseColor
       colors.remove(colorIndex);
     }
     
-    public void adjustColor(int deltaR, int deltaG, int deltaB) {
+    public void adjustRGB(int deltaR, int deltaG, int deltaB) {
       color c = colors.get(colorIndex).value;
       int r = (c >> 16 & 0xFF) + deltaR;
       int g = (c >> 8 & 0xFF)  + deltaG;
       int b = (c & 0xFF) + deltaB;
       colors.get(colorIndex).value = color(r, g, b);
+    }
+    
+    public void adjustHSV(int deltaH, int deltaS, int deltaV) {
+      colorMode(HSB, 255);
+      color c = colors.get(colorIndex).value;
+      float h = hue(c) + deltaH;
+      float s = saturation(c) + deltaS;
+      float b = brightness(c) + deltaV;
+      colors.get(colorIndex).value = color(h, s, b);
+      colorMode(RGB, 255);
     }
     
     public String getColorAsText() {
@@ -255,12 +265,10 @@ class Gradient extends BaseColor
     public void generateRandom(int count /*OfInnerStops*/) {
       int totalStops = count + 2;
       colors.clear();
-      float step = 1.0f / (totalStops - 1);
       for (int i = 0; i < totalStops; ++i) {
         int r = (int)(Math.random()*255);
         int g = (int)(Math.random()*255);
         int b = (int)(Math.random()*255);
-        //float p = i * step;
         float p = (float)Math.random() - 0.1;
         p = Math.max(p, 0.01);
         p = Math.min(p, 0.99);
@@ -316,22 +324,40 @@ class Gradient extends BaseColor
     }
     switch(key) {
      case 'r':
-       current.adjustColor(d, 0, 0);
+       current.adjustRGB(d, 0, 0);
        break;
      case 'R':
-       current.adjustColor(-d, 0, 0);
+       current.adjustRGB(-d, 0, 0);
        break;
      case 'g':
-       current.adjustColor(0, d, 0);
+       current.adjustRGB(0, d, 0);
        break;
      case 'G':
-       current.adjustColor(0, -d, 0);
+       current.adjustRGB(0, -d, 0);
        break;
      case 'b':
-       current.adjustColor(0, 0, d);
+       current.adjustRGB(0, 0, d);
        break;
      case 'B':
-       current.adjustColor(0, 0, -d);
+       current.adjustRGB(0, 0, -d);
+       break;
+     case 'h':
+       current.adjustHSV(d, 0, 0);
+       break;
+     case 'H':
+       current.adjustHSV(-d, 0, 0);
+       break;
+     case 's':
+       current.adjustHSV(0, d, 0);
+       break;
+     case 'S':
+       current.adjustHSV(0, -d, 0);
+       break;
+     case 'v':
+       current.adjustHSV(0, 0, d);
+       break;
+     case 'V':
+       current.adjustHSV(0, 0, -d);
        break;
      case 'd':
        d = d >> 2;
@@ -341,7 +367,7 @@ class Gradient extends BaseColor
        d = d << 2;
        d = d < 2 ? 1 : d;
        break;
-      case 'v':
+      case 'x':
         current.reverse();
         break;
       case 'c':
@@ -353,13 +379,13 @@ class Gradient extends BaseColor
   @Override
   public int drawHelp(int y) {
     y = current.drawGradientColors(y);
-    text(current.getColorAsText() + "(+r, +g, +b; -R, -G, -B) / " + "Delta: " + d + " (+d; -D)", 10, y); y += Constants.lineDrawStep;
+    text(current.getColorAsText() + "(rR, gG, bB; hH, sS, vV) / " + "Delta: " + d + " (+d; -D)", 10, y); y += Constants.lineDrawStep;
     text("", 10, y); y += Constants.lineDrawStep;
     text("Numpad > 7, 9 < to insert color stop after current or delete current color stop", 10, y); y += Constants.lineDrawStep;
     text("Numpad > 4, 6 < to select color stop", 10, y); y += Constants.lineDrawStep;
     text("Numpad > 1, 3 < to adjust color stop position", 10, y); y += Constants.lineDrawStep;
     text("Use 1-9 to generate N+2 color random gradient", 10, y); y += Constants.lineDrawStep;
-    text("> v < to reverse gradient direction", 10, y); y += Constants.lineDrawStep;
+    text("> x < to reverse gradient direction", 10, y); y += Constants.lineDrawStep;
     text("> c < to invert color value", 10, y); y += Constants.lineDrawStep;
     return y;
   }
