@@ -6,7 +6,6 @@ class ParametricSystemController extends DynamicSystem {
   DynamicSystem current = null;
   int index = 0;
   
-  
   SystemState state = SystemState.DEFAULT;
   
   public ParametricSystemController() {

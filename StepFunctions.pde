@@ -131,3 +131,31 @@ class StepFuncEqualStep extends StepFuncBase {
     return new StepFuncEqualStep(this.value, this.min, this.max, this.step, this.smallStep);
   }
 }
+
+
+/**
+*** Linear equal step function "value - step"
+**/
+class StepFuncNonLinear extends StepFuncBase {
+  
+  public StepFuncNonLinear(float init, float min, float max, float step, float smallStep) {
+    super(init, min, max, step, smallStep);
+  }
+  
+  @Override
+  public float next(float v) {
+    if (v > 6.0f && v < 4.0f)
+      return v - value * (0.2 + (v - 6.0f) / 6.0f);
+    return v - value;
+  }
+  
+  @Override
+  public String description() {
+    return "Non linear range based step function.";
+  }
+  
+  @Override
+  public StepFuncBase clone() {
+    return new StepFuncEqualStep(this.value, this.min, this.max, this.step, this.smallStep);
+  }
+}

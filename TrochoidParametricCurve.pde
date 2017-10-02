@@ -2,9 +2,6 @@ import geomerative.*;
 
 class TrochoidParametricCurve extends DynamicSystem {
   
-  int colorFuncIndex = 0;
-  ArrayList<BaseColor> colorFunctions = new ArrayList<BaseColor>();
-  
   final class PathPoint {
     public float x;
     public float y;
@@ -14,13 +11,18 @@ class TrochoidParametricCurve extends DynamicSystem {
       this.y = y;
     }
   }
+  ArrayList<PathPoint> pathPoints = new ArrayList<PathPoint>();
+  
+  int colorFuncIndex = 0;
+  ArrayList<BaseColor> colorFunctions = new ArrayList<BaseColor>();
 
   ParametricSystemController controller;
   
-  ArrayList<PathPoint> pathPoints = new ArrayList<PathPoint>();
+  
   StepFuncBase[] stepFunctions = {
+    new StepFuncNonLinear(0.1f, 0.0f, 10.0f, 0.01f, 0.001f),
     new StepFuncEqualStep(0.1f, -5f, 5f, 0.01f, 0.001f),
-    new StepFuncDivisor(1.1f, 1.01f, 2.1f, 0.01f, 0.001f),
+    new StepFuncDivisor(1.1f, 1.01f, 2.1f, 0.01f, 0.001f)
     //new StepFuncSinStep(0, -180, 180, 2),
   };
   int stepFuncIndex = 0;
